@@ -8,13 +8,17 @@
 <body>
     <h1>Plate Scanner</h1>
     <button onclick="startScan()">Scan Plate</button>
+    <div>
+        <img id="video" src="{{ url_for('video_feed') }}" style="width: 100%; height: auto;" />
+    </div>
 
     <script>
         function startScan() {
+            // Panggil rute untuk memulai pemindaian
             fetch('/scan')
-                .then(response => response.json())
+                .then(response => response.text())
                 .then(data => {
-                    console.log(data.status);
+                    console.log(data);
                 })
                 .catch(error => console.error('Error:', error));
         }

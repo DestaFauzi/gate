@@ -1,4 +1,4 @@
-from flask import Flask, render_template
+from flask import Flask, render_template, Response
 import sqlite3
 import RPi.GPIO as GPIO
 import cv2
@@ -20,9 +20,40 @@ def open_gate():
             GPIO.output(pin, GPIO.HIGH)
             GPIO.output(pin, GPIO.LOW)
 
-# Fungsi untuk menangkap gambar dan mendeteksi plat
-def capture_image():
+# Mengalirkan video
+def generate_frames():
     camera = cv2.VideoCapture(0)  # Ganti dengan index kamera jika perlu
+    while True:
+        success, frame = camera.read()  # Baca frame dari kamera
+        if not success:
+            break
+        else:
+            # Mengubah frame menjadi JPEG
+            ret, buffer = cv2.imencode('.jpg', frame)
+            frame = buffer.tobytes()
+            yield (b'--frame\r\n'
+                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+@app.route('/video_feed')
+def video_feed():
+    return Response(generate_frames(), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+@app.route('/scan')
+def scan():
+    plate = detect_plate()
+    if plate:
+        if plate_found_in_db(plate):
+            open_gate()
+            return f"Plate {plate} matched! Gate opened."
+        return "Plate not found."
+    return "No plate detected."
+
+def capture_image():
+    camera = cv2.VideoCapture(0)
     ret, frame = camera.read()
     if ret:
         cv2.imwrite('plate.jpg', frame)
@@ -40,21 +71,6 @@ def plate_found_in_db(plate):
     result = c.fetchone()
     conn.close()
     return result is not None
-
-@app.route('/')
-def index():
-    return render_template('index.html')
-
-@app.route('/scan')
-def scan():
-    capture_image()
-    plate = detect_plate()
-    if plate:
-        if plate_found_in_db(plate):
-            open_gate()
-            return f"Plate {plate} matched! Gate opened."
-        return "Plate not found."
-    return "No plate detected."
 
 if __name__ == '__main__':
     # Buat folder dan database jika belum ada
