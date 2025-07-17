@@ -3,11 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plate Detection System</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Plate Scanner</title>
 </head>
 <body>
-    <h1>Plate Detection System</h1>
-    <a href="/scan">Scan Plate</a>
+    <h1>Plate Scanner</h1>
+    <button onclick="startScan()">Scan Plate</button>
+
+    <script>
+        function startScan() {
+            fetch('/scan')
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data.status);
+                })
+                .catch(error => console.error('Error:', error));
+        }
+    </script>
 </body>
 </html>
